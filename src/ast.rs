@@ -13,7 +13,7 @@ impl ToString for Program {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -41,7 +41,7 @@ impl ToString for Statement {
 //     }
 // }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LetStatement {
     // token: Token,
     // name: Ident,
@@ -59,7 +59,7 @@ impl ToString for LetStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ReturnStatement {
     token: Token,
     return_value: Expression,
@@ -71,10 +71,10 @@ impl ToString for ReturnStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ExpressionStatement {
-    token: Token,
-    expression: Expression,
+    pub token: Token,
+    pub expression: Expression,
 }
 
 impl ToString for ExpressionStatement {
@@ -83,7 +83,7 @@ impl ToString for ExpressionStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Prefix(PrefixExpression),
     Infix(InfixExpression),
@@ -106,27 +106,27 @@ impl ToString for Expression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CallExpression {
     token: Token,
     function: FunctionExpression,
     arguments: Vec<Expression>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionExpression {
     token: Token,
     parameters: Vec<Ident>,
     body: BlockStatement,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BlockStatement {
     token: Token,
     statements: Vec<Statement>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IfExpression {
     token: Token,
     condition: Box<Expression>,
@@ -134,18 +134,18 @@ pub struct IfExpression {
     alternative: BlockStatement,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct PrefixExpression {
     token: Token,
-    operator: Vec<u8>,
+    operator: String,
     right: Box<Expression>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct InfixExpression {
-    token: Token,
+    // token: Token,
     left: Box<Expression>,
-    operator: Vec<u8>,
+    operator: String,
     right: Box<Expression>,
 }
 

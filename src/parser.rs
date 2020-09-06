@@ -1,4 +1,7 @@
-use crate::ast::{Expression, ExpressionStatement, IfExpression, LetStatement, Program, Statement};
+use crate::ast::{
+    Expression, ExpressionStatement, IfExpression, InfixExpression, LetStatement, Program,
+    Statement,
+};
 use crate::lexer::Lexer;
 use crate::token::{Token, Type};
 use thiserror::Error;
@@ -9,11 +12,14 @@ pub enum ParseError {
     UnexpectedToken { expected: Type, actual: Type },
     #[error("no prefix parse function for {0:?} found")]
     NoPrefixParseFunc(Type),
+    #[error("parse int error")]
+    ParseInt(#[from] std::num::ParseIntError),
 }
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
 #[repr(u8)]
+#[derive(PartialOrd, PartialEq, Debug)]
 pub enum Precedence {
     LOWEST = 1,
     EQUALS,
@@ -61,6 +67,7 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> ParseResult<Statement> {
+        println!("parse_statement. current: {:?}", &self.current_token);
         let s = match self.current_token.type_ {
             Type::LET => Statement::Let(self.parse_let_statement()?),
             _ => Statement::Expression(self.parse_expression_statement()?),
@@ -94,7 +101,7 @@ impl Parser {
         self.next_token();
         let value = self.parse_expression(Precedence::LOWEST)?;
 
-        while self.current_token.type_ == Type::SEMICOLON {
+        while self.peek_token.type_ == Type::SEMICOLON {
             self.next_token();
         }
 
@@ -102,41 +109,81 @@ impl Parser {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> ParseResult<Expression> {
-        let prefix = self.prefix_parse_fns(&self.current_token.type_);
-        if prefix.is_none() {
-            return Err(ParseError::NoPrefixParseFunc(
-                self.current_token.type_.clone(),
-            ));
+        let mut left_expr = self.prefix_parse_fns()?;
+        println!(
+            "parse_expression. current token: {:?}, left_expr: {:?}",
+            &self.current_token, &left_expr
+        );
+        while self.current_token.type_ != Type::SEMICOLON
+            && precedence < type_to_predence(&self.peek_token.type_)
+        {
+            let infix = self.infix_parse_fns(left_expr.clone())?;
+            if infix.is_none() {
+                return Ok(left_expr);
+            }
+            self.next_token();
+            left_expr = infix.unwrap();
         }
-        let mut left_expr = prefix.unwrap()();
-        // while self.current_token.type_ != Type::SEMICOLON && precedence < self.peek_precedence() {
-        //     let infix =
-        // }
+        Ok(left_expr)
+    }
+
+    fn prefix_parse_fns(&mut self) -> ParseResult<Expression> {
+        let t = self.current_token.clone();
+        match t.type_ {
+            Type::IDENT => Ok(Expression::Ident(t.literal)),
+            Type::INT => {
+                let v = t.literal.parse::<i64>()?;
+                Ok(Expression::IntegerLiteral(v))
+            }
+            Type::TRUE => Ok(Expression::Bool(true)),
+            Type::FALSE => Ok(Expression::Bool(false)),
+
+            _ => Err(ParseError::NoPrefixParseFunc(t.type_)),
+        }
+    }
+
+    fn parse_ident(&mut self) -> ParseResult<Expression> {
         todo!()
     }
 
-    fn peek_precedence(&mut self) -> Precedence {
-        match self.peek_token.type_ {
-            Type::EQ | Type::NEQ => Precedence::EQUALS,
-            Type::LT | Type::GT => Precedence::LESSGREATER,
-            Type::PLUS | Type::MINUS => Precedence::SUM,
-            Type::SLASH | Type::ASTARISK => Precedence::PRODUCT,
-            Type::LPAREN => Precedence::CALL,
-            Type::LBRACKET => Precedence::INDEX,
-            _ => Precedence::LOWEST,
+    fn infix_parse_fns(&mut self, expr: Expression) -> ParseResult<Option<Expression>> {
+        let t = self.current_token.clone();
+        match t.type_ {
+            Type::EQ => Ok(Some(Expression::Ident(t.literal))),
+            _ => Ok(None),
         }
     }
 
-    fn prefix_parse_fns(&self, type_: &Type) -> Option<Box<dyn Fn() -> ParseResult<Expression>>> {
-        todo!()
-    }
-
-    fn infix_parse_fns(&self, type_: &Type) -> Option<Box<dyn Fn() -> ParseResult<Expression>>> {
+    fn parse_infix_expression(&mut self, left: Expression) -> ParseResult<Expression> {
+        let current_token = self.current_token.clone();
+        // let expr = Expression::Infix(InfixExpression{
+        //     operator:
+        // })
+        // let prec = self.current_
         todo!()
     }
 
     fn parse_expression_statement(&mut self) -> ParseResult<ExpressionStatement> {
-        todo!()
+        let stmt = ExpressionStatement {
+            token: self.current_token.clone(),
+            expression: self.parse_expression(Precedence::LOWEST)?,
+        };
+        if self.peek_token.type_ == Type::SEMICOLON {
+            self.next_token();
+        }
+        Ok(stmt)
+    }
+}
+
+fn type_to_predence(t: &Type) -> Precedence {
+    match t {
+        Type::EQ | Type::NEQ => Precedence::EQUALS,
+        Type::LT | Type::GT => Precedence::LESSGREATER,
+        Type::PLUS | Type::MINUS => Precedence::SUM,
+        Type::SLASH | Type::ASTARISK => Precedence::PRODUCT,
+        Type::LPAREN => Precedence::CALL,
+        Type::LBRACKET => Precedence::INDEX,
+        _ => Precedence::LOWEST,
     }
 }
 
@@ -147,18 +194,26 @@ mod test {
 
     #[test]
     fn test_let_statements() {
-        let tests = vec![(
-            "let x = 5;",
-            Statement::Let(LetStatement {
-                name: "x".to_owned(),
-                value: Expression::IntegerLiteral(5),
-            }),
-        )];
+        let tests = vec![
+            ("let x = 5;", "x", Expression::IntegerLiteral(5)),
+            ("let y = true;", "y", Expression::Bool(true)),
+            (
+                "let foobar = y;",
+                "foobar",
+                Expression::Ident("y".to_owned()),
+            ),
+        ];
         for t in tests.into_iter() {
             let mut p = Parser::new(Lexer::new(t.0.to_owned()));
             let program = p.parse_program().unwrap();
             assert_eq!(program.statements.len(), 1);
-            assert_eq!(program.statements[0], t.1);
+            assert_eq!(
+                program.statements[0],
+                Statement::Let(LetStatement {
+                    name: t.1.to_owned(),
+                    value: t.2,
+                })
+            );
         }
     }
 }
