@@ -61,13 +61,12 @@ impl ToString for LetStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ReturnStatement {
-    token: Token,
-    return_value: Expression,
+    pub return_value: Expression,
 }
 
 impl ToString for ReturnStatement {
     fn to_string(&self) -> String {
-        todo!()
+        format!("return {};", self.return_value.to_string())
     }
 }
 

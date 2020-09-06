@@ -1,6 +1,6 @@
 use crate::ast::{
     Expression, ExpressionStatement, IfExpression, InfixExpression, LetStatement, Program,
-    Statement,
+    ReturnStatement, Statement,
 };
 use crate::lexer::Lexer;
 use crate::token::{Token, Type};
@@ -70,9 +70,19 @@ impl Parser {
         println!("parse_statement. current: {:?}", &self.current_token);
         let s = match self.current_token.type_ {
             Type::LET => Statement::Let(self.parse_let_statement()?),
+            Type::RETURN => Statement::Return(self.parse_return_statement()?),
             _ => Statement::Expression(self.parse_expression_statement()?),
         };
         Ok(s)
+    }
+
+    fn parse_return_statement(&mut self) -> ParseResult<ReturnStatement> {
+        self.next_token();
+        let return_value = self.parse_expression(Precedence::LOWEST)?;
+        while self.peek_token.type_ == Type::SEMICOLON {
+            self.next_token();
+        }
+        Ok(ReturnStatement { return_value })
     }
 
     fn peek_error(&mut self, t: Type) {
@@ -190,7 +200,7 @@ fn type_to_predence(t: &Type) -> Precedence {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ast::{Expression, Ident, LetStatement, Statement};
+    use crate::ast::{Expression, Ident, LetStatement, ReturnStatement, Statement};
 
     #[test]
     fn test_let_statements() {
@@ -213,6 +223,34 @@ mod test {
                     name: t.1.to_owned(),
                     value: t.2,
                 })
+            );
+        }
+    }
+
+    #[test]
+    fn test_let_statement_errors() {
+        let tests = vec!["let = 5;", "let x =;", "let x 1;"];
+        for t in tests.into_iter() {
+            let mut p = Parser::new(Lexer::new(t.to_owned()));
+            let program = p.parse_program();
+            assert!(program.is_err());
+        }
+    }
+
+    #[test]
+    fn test_return_statements() {
+        let tests = vec![
+            ("return 5;", Expression::IntegerLiteral(5)),
+            ("return true;", Expression::Bool(true)),
+            ("return x;", Expression::Ident("x".to_owned())),
+        ];
+        for t in tests.into_iter() {
+            let mut p = Parser::new(Lexer::new(t.0.to_owned()));
+            let program = p.parse_program().unwrap();
+            assert_eq!(program.statements.len(), 1);
+            assert_eq!(
+                program.statements[0],
+                Statement::Return(ReturnStatement { return_value: t.1 })
             );
         }
     }
