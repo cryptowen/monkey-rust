@@ -72,13 +72,13 @@ impl ToString for ReturnStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ExpressionStatement {
-    pub token: Token,
+    // pub token: Token,
     pub expression: Expression,
 }
 
 impl ToString for ExpressionStatement {
     fn to_string(&self) -> String {
-        todo!()
+        self.expression.to_string()
     }
 }
 
@@ -94,58 +94,130 @@ pub enum Expression {
     Ident(String),
     IntegerLiteral(i64),
     FloatLiteral(f64),
+    Index(IndexExpression),
+    Array(ArrayLiteral),
 }
 
 impl ToString for Expression {
     fn to_string(&self) -> String {
         match self {
             Self::Ident(ident) => ident.to_string(),
-            _ => todo!(),
+            Self::Prefix(p) => format!("({}{})", p.operator, p.right.to_string()),
+            Self::Infix(p) => format!(
+                "({} {} {})",
+                p.left.to_string(),
+                p.operator,
+                p.right.to_string()
+            ),
+            Self::Bool(p) => format!("{}", p),
+            Self::IntegerLiteral(p) => format!("{}", p),
+            Self::FloatLiteral(p) => format!("{}", p),
+            Self::Call(p) => format!(
+                "{}({})",
+                p.function.to_string(),
+                p.arguments
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Self::String(p) => p.to_string(),
+            Self::Function(p) => p.to_string(),
+            Self::If(p) => todo!(),
+            Self::Index(p) => p.to_string(),
+            Self::Array(p) => p.to_string(),
         }
+    }
+}
+
+impl From<bool> for Expression {
+    fn from(b: bool) -> Self {
+        Expression::Bool(b)
+    }
+}
+
+impl From<i64> for Expression {
+    fn from(i: i64) -> Self {
+        Expression::IntegerLiteral(i)
+    }
+}
+
+impl From<f64> for Expression {
+    fn from(i: f64) -> Self {
+        Expression::FloatLiteral(i)
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CallExpression {
-    token: Token,
-    function: FunctionExpression,
-    arguments: Vec<Expression>,
+    pub function: Box<Expression>,
+    pub arguments: Vec<Expression>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionExpression {
-    token: Token,
-    parameters: Vec<Ident>,
-    body: BlockStatement,
+    pub parameters: Vec<Ident>,
+    pub body: BlockStatement,
+}
+
+impl ToString for FunctionExpression {
+    fn to_string(&self) -> String {
+        todo!()
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ArrayLiteral(pub Vec<Box<Expression>>);
+
+impl ToString for ArrayLiteral {
+    fn to_string(&self) -> String {
+        format!(
+            "[{}]",
+            self.0
+                .iter()
+                .map(|e| e.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct IndexExpression {
+    pub left: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+impl ToString for IndexExpression {
+    fn to_string(&self) -> String {
+        format!("({}[{}])", self.left.to_string(), self.index.to_string())
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BlockStatement {
-    token: Token,
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct IfExpression {
-    token: Token,
-    condition: Box<Expression>,
-    consequence: BlockStatement,
-    alternative: BlockStatement,
+    pub condition: Box<Expression>,
+    pub consequence: BlockStatement,
+    pub alternative: BlockStatement,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PrefixExpression {
-    token: Token,
-    operator: String,
-    right: Box<Expression>,
+    pub operator: String,
+    pub right: Box<Expression>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct InfixExpression {
     // token: Token,
-    left: Box<Expression>,
-    operator: String,
-    right: Box<Expression>,
+    pub left: Box<Expression>,
+    pub operator: String,
+    pub right: Box<Expression>,
 }
 
 #[cfg(test)]
@@ -157,17 +229,6 @@ mod test {
     fn test_string() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
-                // token: Token {
-                //     type_: Type::LET,
-                //     literal: "let".to_owned(),
-                // },
-                // name: Ident {
-                //     token: Token {
-                //         type_: Type::IDENT,
-                //         literal: "myVar".to_owned(),
-                //     },
-                //     value: "myVar".to_owned(),
-                // },
                 name: "myVar".to_owned(),
                 value: Expression::Ident("anotherVar".to_owned()),
             })],

@@ -208,13 +208,14 @@ impl Lexer {
                     let type_ = lookup_ident(&literal);
                     return Token { literal, type_ };
                 }
-                Token {
+                return Token {
                     type_: Type::ILLEGAL,
                     literal: self.ch.into(),
-                }
+                };
             }
         };
         self.read_char();
+        // println!("lexer next token: {:?}", &token);
         token
     }
 }
@@ -394,6 +395,29 @@ mod test {
             (Type::RBRACE, "}"),
             (Type::SEMICOLON, ";"),
             (Type::EOF, ""),
+        ];
+        for (t, l) in tests.into_iter() {
+            let token = lexer.next_token();
+            println!("token: {:?}, t: {:?}, l: {:?}", &token, &t, &l);
+            assert_eq!(token.literal, l);
+            assert_eq!(token.type_, t);
+        }
+    }
+
+    #[test]
+    fn test_tokenize_paren() {
+        let input = "1 + (2 + 3) + 4";
+        let mut lexer = Lexer::new(input.to_owned());
+        let tests = vec![
+            (Type::INT, "1"),
+            (Type::PLUS, "+"),
+            (Type::LPAREN, "("),
+            (Type::INT, "2"),
+            (Type::PLUS, "+"),
+            (Type::INT, "3"),
+            (Type::RPAREN, ")"),
+            (Type::PLUS, "+"),
+            (Type::INT, "4"),
         ];
         for (t, l) in tests.into_iter() {
             let token = lexer.next_token();
