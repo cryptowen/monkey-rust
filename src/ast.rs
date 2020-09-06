@@ -4,9 +4,9 @@ pub struct Program {
     statements: Vec<Statement>,
 }
 
-impl Program {
-    fn string(&self) -> String {
-        self.statements.iter().map(|s| s.string()).collect()
+impl ToString for Program {
+    fn to_string(&self) -> String {
+        self.statements.iter().map(|s| s.to_string()).collect()
     }
 }
 
@@ -16,12 +16,12 @@ pub enum Statement {
     Expression(ExpressionStatement),
 }
 
-impl Statement {
-    fn string(&self) -> String {
+impl ToString for Statement {
+    fn to_string(&self) -> String {
         match self {
-            Self::Let(let_statement) => let_statement.string(),
-            Self::Return(return_statement) => return_statement.string(),
-            Self::Expression(expression_statement) => expression_statement.string(),
+            Self::Let(let_statement) => let_statement.to_string(),
+            Self::Return(return_statement) => return_statement.to_string(),
+            Self::Expression(expression_statement) => expression_statement.to_string(),
         }
     }
 }
@@ -31,8 +31,8 @@ pub struct Ident {
     value: String,
 }
 
-impl Ident {
-    fn string(&self) -> String {
+impl ToString for Ident {
+    fn to_string(&self) -> String {
         self.value.clone()
     }
 }
@@ -43,17 +43,13 @@ pub struct LetStatement {
     value: Expression,
 }
 
-impl LetStatement {
-    fn string(&self) -> String {
-        vec![
-            self.token.literal.clone(),
-            " ".to_owned(),
-            self.name.string(),
-            "=".to_owned(),
-            self.value.string(),
-            ";".to_owned(),
-        ]
-        .concat()
+impl ToString for LetStatement {
+    fn to_string(&self) -> String {
+        format!(
+            "let {} = {};",
+            self.name.to_string(),
+            self.value.to_string()
+        )
     }
 }
 
@@ -62,8 +58,8 @@ pub struct ReturnStatement {
     return_value: Expression,
 }
 
-impl ReturnStatement {
-    fn string(&self) -> String {
+impl ToString for ReturnStatement {
+    fn to_string(&self) -> String {
         todo!()
     }
 }
@@ -73,8 +69,8 @@ pub struct ExpressionStatement {
     expression: Expression,
 }
 
-impl ExpressionStatement {
-    fn string(&self) -> String {
+impl ToString for ExpressionStatement {
+    fn to_string(&self) -> String {
         todo!()
     }
 }
@@ -90,8 +86,8 @@ pub enum Expression {
     Ident(String),
 }
 
-impl Expression {
-    fn string(&self) -> String {
+impl ToString for Expression {
+    fn to_string(&self) -> String {
         match self {
             Self::Ident(ident) => ident.to_string(),
             _ => todo!(),
@@ -159,6 +155,6 @@ mod test {
                 value: Expression::Ident("anotherVar".to_owned()),
             })],
         };
-        println!("program: {}", program.string());
+        println!("program: {}", program.to_string());
     }
 }
