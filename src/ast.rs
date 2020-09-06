@@ -1,7 +1,10 @@
 use crate::token::Token;
 
+pub type Ident = String;
+
+#[derive(Default, Debug)]
 pub struct Program {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 impl ToString for Program {
@@ -10,6 +13,7 @@ impl ToString for Program {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -26,21 +30,23 @@ impl ToString for Statement {
     }
 }
 
-pub struct Ident {
-    token: Token,
-    value: String,
-}
+// pub struct Ident {
+//     token: Token,
+//     value: String,
+// }
 
-impl ToString for Ident {
-    fn to_string(&self) -> String {
-        self.value.clone()
-    }
-}
+// impl ToString for Ident {
+//     fn to_string(&self) -> String {
+//         self.value.clone()
+//     }
+// }
 
+#[derive(Debug, PartialEq)]
 pub struct LetStatement {
-    token: Token,
-    name: Ident,
-    value: Expression,
+    // token: Token,
+    // name: Ident,
+    pub name: Ident,
+    pub value: Expression,
 }
 
 impl ToString for LetStatement {
@@ -53,6 +59,7 @@ impl ToString for LetStatement {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ReturnStatement {
     token: Token,
     return_value: Expression,
@@ -64,6 +71,7 @@ impl ToString for ReturnStatement {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ExpressionStatement {
     token: Token,
     expression: Expression,
@@ -75,6 +83,7 @@ impl ToString for ExpressionStatement {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Prefix(PrefixExpression),
     Infix(InfixExpression),
@@ -84,6 +93,8 @@ pub enum Expression {
     Call(CallExpression),
     String(String),
     Ident(String),
+    IntegerLiteral(i64),
+    FloatLiteral(f64),
 }
 
 impl ToString for Expression {
@@ -95,23 +106,27 @@ impl ToString for Expression {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CallExpression {
     token: Token,
     function: FunctionExpression,
     arguments: Vec<Expression>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct FunctionExpression {
     token: Token,
     parameters: Vec<Ident>,
     body: BlockStatement,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct BlockStatement {
     token: Token,
     statements: Vec<Statement>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct IfExpression {
     token: Token,
     condition: Box<Expression>,
@@ -119,12 +134,14 @@ pub struct IfExpression {
     alternative: BlockStatement,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct PrefixExpression {
     token: Token,
     operator: Vec<u8>,
     right: Box<Expression>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct InfixExpression {
     token: Token,
     left: Box<Expression>,
@@ -141,17 +158,18 @@ mod test {
     fn test_string() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
-                token: Token {
-                    type_: Type::LET,
-                    literal: "let".to_owned(),
-                },
-                name: Ident {
-                    token: Token {
-                        type_: Type::IDENT,
-                        literal: "myVar".to_owned(),
-                    },
-                    value: "myVar".to_owned(),
-                },
+                // token: Token {
+                //     type_: Type::LET,
+                //     literal: "let".to_owned(),
+                // },
+                // name: Ident {
+                //     token: Token {
+                //         type_: Type::IDENT,
+                //         literal: "myVar".to_owned(),
+                //     },
+                //     value: "myVar".to_owned(),
+                // },
+                name: "myVar".to_owned(),
                 value: Expression::Ident("anotherVar".to_owned()),
             })],
         };

@@ -11,7 +11,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    fn new(input: String) -> Self {
+    pub fn new(input: String) -> Self {
         let mut l = Self {
             input: input.chars().collect(),
             ..Default::default()
@@ -94,7 +94,7 @@ impl Lexer {
         self.input[position..self.position].iter().collect()
     }
 
-    fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         if self.ch == '/' && self.peek_char() == '/' {
             self.skip_comment();
