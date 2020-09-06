@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Type {
     ILLEGAL,
     EOF,
@@ -38,19 +38,19 @@ pub enum Type {
 #[derive(Debug)]
 pub struct Token {
     pub type_: Type,
-    pub literal: Vec<u8>,
+    pub literal: String,
 }
 
-pub fn lookup_ident(s: &[u8]) -> Type {
+pub fn lookup_ident(s: &str) -> Type {
     match s {
-        b"fn" => Type::FUNCTION,
-        b"let" => Type::LET,
-        b"true" => Type::TRUE,
-        b"false" => Type::FALSE,
-        b"if" => Type::IF,
-        b"else" => Type::ELSE,
-        b"return" => Type::RETURN,
-        b"macro" => Type::MACRO,
+        "fn" => Type::FUNCTION,
+        "let" => Type::LET,
+        "true" => Type::TRUE,
+        "false" => Type::FALSE,
+        "if" => Type::IF,
+        "else" => Type::ELSE,
+        "return" => Type::RETURN,
+        "macro" => Type::MACRO,
         _ => Type::IDENT,
     }
 }

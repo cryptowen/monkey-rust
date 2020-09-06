@@ -1,17 +1,19 @@
 use crate::token::{lookup_ident, Token, Type};
 
+const ZERO_CHAR: char = '\u{0}';
+
 #[derive(Debug, Default)]
 pub struct Lexer {
-    input: Vec<u8>,
+    input: Vec<char>,
     position: usize,
     read_position: usize,
-    ch: u8,
+    ch: char,
 }
 
 impl Lexer {
-    fn new(input: Vec<u8>) -> Self {
+    fn new(input: String) -> Self {
         let mut l = Self {
-            input,
+            input: input.chars().collect(),
             ..Default::default()
         };
         l.read_char();
@@ -20,7 +22,7 @@ impl Lexer {
 
     fn read_char(&mut self) {
         self.ch = if self.read_position >= self.input.len() {
-            0
+            ZERO_CHAR
         } else {
             self.input[self.read_position]
         };
@@ -29,45 +31,45 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
+        while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
             self.read_char();
         }
     }
 
     fn skip_comment(&mut self) {
-        while self.ch != b'\n' && self.ch != b'\r' {
+        while self.ch != '\n' && self.ch != '\r' {
             self.read_char();
         }
         self.skip_whitespace();
     }
 
-    fn peek_char(&mut self) -> u8 {
+    fn peek_char(&mut self) -> char {
         if self.read_position >= self.input.len() {
-            0
+            ZERO_CHAR
         } else {
             self.input[self.read_position]
         }
     }
 
-    fn read(&mut self, check_fn: fn(u8) -> bool) -> Vec<u8> {
+    fn read(&mut self, check_fn: fn(char) -> bool) -> String {
         let position = self.position;
         while check_fn(self.ch) {
             self.read_char();
         }
-        self.input[position..self.position].to_vec()
+        self.input[position..self.position].iter().collect()
     }
 
-    fn read_ident(&mut self) -> Vec<u8> {
+    fn read_ident(&mut self) -> String {
         self.read(is_letter)
     }
 
-    fn read_number(&mut self) -> Vec<u8> {
+    fn read_number(&mut self) -> String {
         self.read(is_digit)
     }
 
     fn read_number_token(&mut self) -> Token {
         let int_part = self.read_number();
-        if self.ch != b'.' {
+        if self.ch != '.' {
             return Token {
                 type_: Type::INT,
                 literal: int_part,
@@ -77,125 +79,125 @@ impl Lexer {
         let frac_part = self.read_number();
         Token {
             type_: Type::FLOAT,
-            literal: vec![int_part, vec![b'.'], frac_part].concat(),
+            literal: vec![int_part, '.'.into(), frac_part].concat(),
         }
     }
 
-    fn read_string(&mut self) -> Vec<u8> {
+    fn read_string(&mut self) -> String {
         let position = self.position + 1;
         loop {
             self.read_char();
-            if self.ch == b'"' || self.ch == 0 {
+            if self.ch == '"' || self.ch == ZERO_CHAR {
                 break;
             }
         }
-        self.input[position..self.position].to_vec()
+        self.input[position..self.position].iter().collect()
     }
 
     fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-        if self.ch == b'/' && self.peek_char() == b'/' {
+        if self.ch == '/' && self.peek_char() == '/' {
             self.skip_comment();
         }
 
         let token = match self.ch {
-            b'=' => {
-                if self.peek_char() == b'=' {
+            '=' => {
+                if self.peek_char() == '=' {
                     let ch = self.ch;
                     self.read_char();
                     Token {
                         type_: Type::EQ,
-                        literal: vec![ch, self.ch],
+                        literal: vec![ch, self.ch].iter().collect(),
                     }
                 } else {
                     Token {
                         type_: Type::ASSIGN,
-                        literal: vec![self.ch],
+                        literal: self.ch.into(),
                     }
                 }
             }
-            b'!' => {
-                if self.peek_char() == b'=' {
+            '!' => {
+                if self.peek_char() == '=' {
                     let ch = self.ch;
                     self.read_char();
                     Token {
                         type_: Type::NEQ,
-                        literal: vec![ch, self.ch],
+                        literal: vec![ch, self.ch].iter().collect(),
                     }
                 } else {
                     Token {
                         type_: Type::BANG,
-                        literal: vec![self.ch],
+                        literal: self.ch.into(),
                     }
                 }
             }
-            b';' => Token {
+            ';' => Token {
                 type_: Type::SEMICOLON,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b':' => Token {
+            ':' => Token {
                 type_: Type::COLON,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'(' => Token {
+            '(' => Token {
                 type_: Type::LPAREN,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b')' => Token {
+            ')' => Token {
                 type_: Type::RPAREN,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b',' => Token {
+            ',' => Token {
                 type_: Type::COMMA,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'+' => Token {
+            '+' => Token {
                 type_: Type::PLUS,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'-' => Token {
+            '-' => Token {
                 type_: Type::MINUS,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'*' => Token {
+            '*' => Token {
                 type_: Type::ASTARISK,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'/' => Token {
+            '/' => Token {
                 type_: Type::SLASH,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'<' => Token {
+            '<' => Token {
                 type_: Type::LT,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'>' => Token {
+            '>' => Token {
                 type_: Type::GT,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'{' => Token {
+            '{' => Token {
                 type_: Type::LBRACE,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'}' => Token {
+            '}' => Token {
                 type_: Type::RBRACE,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'[' => Token {
+            '[' => Token {
                 type_: Type::LBRACKET,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b']' => Token {
+            ']' => Token {
                 type_: Type::RBRACKET,
-                literal: vec![self.ch],
+                literal: self.ch.into(),
             },
-            b'"' => Token {
+            '"' => Token {
                 type_: Type::STRING,
                 literal: self.read_string(),
             },
-            0 => Token {
+            ZERO_CHAR => Token {
                 type_: Type::EOF,
-                literal: vec![],
+                literal: String::new(),
             },
             _ => {
                 if is_digit(self.ch) {
@@ -208,7 +210,7 @@ impl Lexer {
                 }
                 Token {
                     type_: Type::ILLEGAL,
-                    literal: vec![self.ch],
+                    literal: self.ch.into(),
                 }
             }
         };
@@ -217,12 +219,12 @@ impl Lexer {
     }
 }
 
-fn is_letter(ch: u8) -> bool {
-    b'a' <= ch && ch <= b'z' || b'A' <= ch && ch <= b'Z' || ch == b'_'
+fn is_letter(ch: char) -> bool {
+    ch.is_ascii_alphabetic() || ch == '_'
 }
 
-fn is_digit(ch: u8) -> bool {
-    b'0' <= ch && ch <= b'9'
+fn is_digit(ch: char) -> bool {
+    ch.is_ascii_digit()
 }
 
 #[cfg(test)]
@@ -267,7 +269,7 @@ mod test {
 
         macro(x, y) { x + y; };
         "#;
-        let mut lexer = Lexer::new(input.as_bytes().to_vec());
+        let mut lexer = Lexer::new(input.to_owned());
         let tests = vec![
             (Type::LET, "let"),
             (Type::IDENT, "five"),
@@ -396,7 +398,7 @@ mod test {
         for (t, l) in tests.into_iter() {
             let token = lexer.next_token();
             println!("token: {:?}, t: {:?}, l: {:?}", &token, &t, &l);
-            assert_eq!(token.literal, l.as_bytes());
+            assert_eq!(token.literal, l);
             assert_eq!(token.type_, t);
         }
     }
